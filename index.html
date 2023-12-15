@@ -34,7 +34,7 @@
   <title>Land Capture Game</title>
 </head>
 <body>
-  <div id="versionInfo" class="border-label">Version: 1.1</div>
+  <div id="versionInfo" class="border-label">Version: 1.5</div>
   <label for="scaleSlider">Adjust Grid Scale:</label>
   <input type="range" id="scaleSlider" min="25" max="200" step="25" value="100" />
   <br>
@@ -212,9 +212,11 @@
       }
 
       function handleMouseDown(event) {
-        isDragging = true;
-        dragStartX = event.clientX;
-        dragStartY = event.clientY;
+        if (!isMapLocked) {
+          isDragging = true;
+          dragStartX = event.clientX;
+          dragStartY = event.clientY;
+        }
       }
 
       function handleMouseMove(event) {
