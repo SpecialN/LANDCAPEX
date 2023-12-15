@@ -9,6 +9,7 @@
       cursor: pointer;
       max-width: 100%; /* Ensure the canvas doesn't exceed the width of the viewport */
       height: auto; /* Maintain the aspect ratio of the canvas */
+      transition: transform 0.3s ease-in-out; /* Add a smooth transition for the animation */
     }
   </style>
   <title>Land Capture Game</title>
@@ -28,6 +29,7 @@
   <br>
   <input type="file" id="imageInput" accept="image/jpeg, image/png" />
   <canvas id="gridCanvas"></canvas>
+  <button id="undoButton">Undo</button>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       const canvas = document.getElementById("gridCanvas");
@@ -35,6 +37,7 @@
       const imageInput = document.getElementById("imageInput");
       const scaleSlider = document.getElementById("scaleSlider");
       const colorSelector = document.getElementById("colorSelector");
+      const undoButton = document.getElementById("undoButton");
 
       let image = new Image();
       let isImageLoaded = false;
@@ -43,10 +46,9 @@
       let isDragging = false;
       let dragStartX, dragStartY;
 
-      // Initialize the grid with an empty array
       const grid = [];
+      const gridHistory = [];
 
-      // Listen for image upload
       imageInput.addEventListener("change", function(event) {
         const file = event.target.files[0];
         if (file) {
@@ -58,35 +60,29 @@
         }
       });
 
-      // Listen for slider value changes
       scaleSlider.addEventListener("input", function() {
         gridSize = parseInt(scaleSlider.value);
         drawOverlay();
       });
 
-      // Listen for color selection changes
       colorSelector.addEventListener("change", function() {
         selectedColor = colorSelector.value;
       });
 
       image.onload = function() {
         isImageLoaded = true;
-        canvas.width = image.width; // Set canvas width to image width
-        canvas.height = image.height; // Set canvas height to image height
+        canvas.width = image.width;
+        canvas.height = image.height;
         drawOverlay();
       };
 
       function drawOverlay() {
         if (!isImageLoaded) return;
 
-        // Clear the canvas
         context.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw the map
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-        // Draw the semi-transparent grid on top
-        context.globalAlpha = 0.5; // Set transparency
+        context.globalAlpha = 0.5;
 
         const rows = Math.ceil(canvas.height / gridSize);
         const cols = Math.ceil(canvas.width / gridSize);
@@ -99,7 +95,7 @@
             context.strokeRect(j * gridSize, i * gridSize, gridSize, gridSize);
           }
         }
-        context.globalAlpha = 1; // Reset transparency
+        context.globalAlpha = 1;
       }
 
       function getColor(x, y) {
@@ -125,6 +121,9 @@
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
+        // Save the current grid state to history before updating
+        gridHistory.push([...grid.map(row => [...row])]);
+
         setColor(x, y, selectedColor);
       }
 
@@ -148,17 +147,14 @@
         dragStartX = x;
         dragStartY = y;
 
-        // Adjust the grid position
         for (let i = 0; i < grid.length; i++) {
           for (let j = 0; j < grid[i].length; j++) {
-            grid[i][j] = "transparent"; // Clear the grid
+            grid[i][j] = "transparent";
           }
         }
 
         drawOverlay();
         context.translate(deltaX, deltaY);
-
-        // Redraw the grid after the translation
         drawOverlay();
       }
 
@@ -166,10 +162,28 @@
         isDragging = false;
       }
 
+      function handleUndo() {
+        if (gridHistory.length > 0) {
+          // Pop the last state from history
+          grid.splice(0, grid.length, ...gridHistory.pop());
+          drawOverlay();
+          animateUndo();
+        }
+      }
+
+      function animateUndo() {
+        // Apply a simple animation to indicate the undo
+        canvas.style.transform = "scale(1.1)";
+        setTimeout(() => {
+          canvas.style.transform = "scale(1)";
+        }, 300);
+      }
+
       canvas.addEventListener("click", handleClick);
       canvas.addEventListener("mousedown", handleMouseDown);
       canvas.addEventListener("mousemove", handleMouseMove);
       canvas.addEventListener("mouseup", handleMouseUp);
+      undoButton.addEventListener("click", handleUndo);
     });
   </script>
 </body>
