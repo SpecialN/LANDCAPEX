@@ -40,6 +40,8 @@
       let isImageLoaded = false;
       let gridSize = parseInt(scaleSlider.value);
       let selectedColor = colorSelector.value;
+      let isDragging = false;
+      let dragStartX, dragStartY;
 
       // Initialize the grid with an empty array
       const grid = [];
@@ -126,7 +128,48 @@
         setColor(x, y, selectedColor);
       }
 
+      function handleMouseDown(event) {
+        isDragging = true;
+        const rect = canvas.getBoundingClientRect();
+        dragStartX = event.clientX - rect.left;
+        dragStartY = event.clientY - rect.top;
+      }
+
+      function handleMouseMove(event) {
+        if (!isDragging) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const deltaX = x - dragStartX;
+        const deltaY = y - dragStartY;
+
+        dragStartX = x;
+        dragStartY = y;
+
+        // Adjust the grid position
+        for (let i = 0; i < grid.length; i++) {
+          for (let j = 0; j < grid[i].length; j++) {
+            grid[i][j] = "transparent"; // Clear the grid
+          }
+        }
+
+        drawOverlay();
+        context.translate(deltaX, deltaY);
+
+        // Redraw the grid after the translation
+        drawOverlay();
+      }
+
+      function handleMouseUp() {
+        isDragging = false;
+      }
+
       canvas.addEventListener("click", handleClick);
+      canvas.addEventListener("mousedown", handleMouseDown);
+      canvas.addEventListener("mousemove", handleMouseMove);
+      canvas.addEventListener("mouseup", handleMouseUp);
     });
   </script>
 </body>
