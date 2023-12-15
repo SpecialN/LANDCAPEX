@@ -11,6 +11,11 @@
       height: auto; /* Maintain the aspect ratio of the canvas */
       transition: transform 0.3s ease-in-out; /* Add a smooth transition for the animation */
     }
+    .border-label {
+      position: absolute;
+      font-size: 14px;
+      pointer-events: none;
+    }
   </style>
   <title>Land Capture Game</title>
 </head>
@@ -31,6 +36,8 @@
   <canvas id="gridCanvas"></canvas>
   <button id="undoButton">Undo</button>
   <button id="lockUnlockButton">Lock Map</button>
+  <div id="timestamps" class="timestamp"></div>
+  <div id="hoverInfo" class="border-label"></div>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       const canvas = document.getElementById("gridCanvas");
@@ -40,12 +47,16 @@
       const colorSelector = document.getElementById("colorSelector");
       const undoButton = document.getElementById("undoButton");
       const lockUnlockButton = document.getElementById("lockUnlockButton");
+      const timestampsContainer = document.getElementById("timestamps");
+      const hoverInfo = document.getElementById("hoverInfo");
 
       let image = new Image();
       let isImageLoaded = false;
       let gridSize = parseInt(scaleSlider.value);
       let selectedColor = colorSelector.value;
       let isMapLocked = false;
+      let offsetX = 0;
+      let offsetY = 0;
 
       const grid = [];
       const gridHistory = [];
@@ -81,7 +92,7 @@
         if (!isImageLoaded) return;
 
         context.clearRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        context.drawImage(image, offsetX, offsetY, canvas.width, canvas.height);
 
         context.globalAlpha = 0.5;
 
@@ -92,22 +103,59 @@
           for (let j = 0; j < cols; j++) {
             const color = grid[i] && grid[i][j] ? grid[i][j].color : "transparent";
             context.fillStyle = color;
-            context.fillRect(j * gridSize, i * gridSize, gridSize, gridSize);
-            context.strokeRect(j * gridSize, i * gridSize, gridSize, gridSize);
+            context.fillRect(j * gridSize + offsetX, i * gridSize + offsetY, gridSize, gridSize);
+            context.strokeRect(j * gridSize + offsetX, i * gridSize + offsetY, gridSize, gridSize);
           }
         }
         context.globalAlpha = 1;
+
+        drawBorders();
+      }
+
+      function drawBorders() {
+        context.lineWidth = 2;
+        context.strokeStyle = "black";
+        context.font = "12px Arial";
+
+        const rows = Math.ceil(canvas.height / gridSize);
+        const cols = Math.ceil(canvas.width / gridSize);
+
+        for (let i = 0; i <= rows; i++) {
+          const y = i * gridSize + offsetY;
+          context.beginPath();
+          context.moveTo(0, y);
+          context.lineTo(canvas.width, y);
+          context.stroke();
+
+          if (i < rows) {
+            const label = prompt(`Enter Northing for border row ${i + 1}:`, `N ${i}`);
+            context.fillText(label, 5, y + 15);
+          }
+        }
+
+        for (let j = 0; j <= cols; j++) {
+          const x = j * gridSize + offsetX;
+          context.beginPath();
+          context.moveTo(x, 0);
+          context.lineTo(x, canvas.height);
+          context.stroke();
+
+          if (j < cols) {
+            const label = prompt(`Enter Easting for border column ${j + 1}:`, `E ${j}`);
+            context.fillText(label, x + 5, 15);
+          }
+        }
       }
 
       function getColor(x, y) {
-        const rowIndex = Math.floor(y / gridSize);
-        const colIndex = Math.floor(x / gridSize);
+        const rowIndex = Math.floor((y - offsetY) / gridSize);
+        const colIndex = Math.floor((x - offsetX) / gridSize);
         return grid[rowIndex] ? grid[rowIndex][colIndex] : undefined;
       }
 
       function setColor(x, y, color) {
-        const rowIndex = Math.floor(y / gridSize);
-        const colIndex = Math.floor(x / gridSize);
+        const rowIndex = Math.floor((y - offsetY) / gridSize);
+        const colIndex = Math.floor((x - offsetX) / gridSize);
 
         if (!grid[rowIndex]) {
           grid[rowIndex] = [];
@@ -143,9 +191,26 @@
         lockUnlockButton.textContent = isMapLocked ? "Unlock Map" : "Lock Map";
       }
 
+      function handleHover(event) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const rowIndex = Math.floor((y - offsetY) / gridSize);
+        const colIndex = Math.floor((x - offsetX) / gridSize);
+
+        const northing = prompt("Enter Northing:", `N ${rowIndex + 1}`);
+        const easting = prompt("Enter Easting:", `E ${colIndex + 1}`);
+
+        hoverInfo.textContent = `Northing: ${northing}, Easting: ${easting}`;
+        hoverInfo.style.left = `${x + 10}px`;
+        hoverInfo.style.top = `${y}px`;
+      }
+
       canvas.addEventListener("click", handleClick);
       undoButton.addEventListener("click", handleUndo);
       lockUnlockButton.addEventListener("click", toggleMapLock);
+      canvas.addEventListener("mousemove", handleHover);
     });
   </script>
 </body>
