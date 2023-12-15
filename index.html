@@ -15,7 +15,16 @@
   <label for="scaleSlider">Adjust Grid Scale:</label>
   <input type="range" id="scaleSlider" min="50" max="200" step="50" value="100" />
   <br>
-  <input type="file" id="imageInput" accept="image/jpeg" />
+  <label for="colorSelector">Select Grid Color:</label>
+  <select id="colorSelector">
+    <option value="red">Red</option>
+    <option value="green">Green</option>
+    <option value="blue">Blue</option>
+    <option value="yellow">Yellow</option>
+    <option value="transparent">Transparent</option>
+  </select>
+  <br>
+  <input type="file" id="imageInput" accept="image/jpeg, image/png" />
   <canvas id="gridCanvas" width="600" height="600"></canvas>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -23,10 +32,12 @@
       const context = canvas.getContext("2d");
       const imageInput = document.getElementById("imageInput");
       const scaleSlider = document.getElementById("scaleSlider");
+      const colorSelector = document.getElementById("colorSelector");
 
       let image = new Image();
       let isImageLoaded = false;
       let gridSize = parseInt(scaleSlider.value);
+      let selectedColor = colorSelector.value;
 
       // Listen for image upload
       imageInput.addEventListener("change", function(event) {
@@ -46,35 +57,33 @@
         drawOverlay();
       });
 
+      // Listen for color selection changes
+      colorSelector.addEventListener("change", function() {
+        selectedColor = colorSelector.value;
+      });
+
       image.onload = function() {
         isImageLoaded = true;
         drawOverlay();
       };
 
-      const rows = canvas.height / gridSize;
-      const cols = canvas.width / gridSize;
-
-      const grid = [];
-
-      // Initialize the grid with default color (red)
-      for (let i = 0; i < rows; i++) {
-        grid[i] = [];
-        for (let j = 0; j < cols; j++) {
-          grid[i][j] = "red";
-        }
-      }
-
       function drawOverlay() {
         if (!isImageLoaded) return;
+
+        // Clear the canvas
+        context.clearRect(0, 0, canvas.width, canvas.height);
 
         // Draw the map
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
         // Draw the semi-transparent grid on top
         context.globalAlpha = 0.5; // Set transparency
+        const rows = Math.ceil(canvas.height / gridSize);
+        const cols = Math.ceil(canvas.width / gridSize);
+
         for (let i = 0; i < rows; i++) {
           for (let j = 0; j < cols; j++) {
-            const color = grid[i][j];
+            const color = grid[i] && grid[i][j] ? grid[i][j] : "transparent";
             context.fillStyle = color;
             context.fillRect(j * gridSize, i * gridSize, gridSize, gridSize);
             context.strokeRect(j * gridSize, i * gridSize, gridSize, gridSize);
@@ -86,12 +95,17 @@
       function getColor(x, y) {
         const rowIndex = Math.floor(y / gridSize);
         const colIndex = Math.floor(x / gridSize);
-        return grid[rowIndex][colIndex];
+        return grid[rowIndex] ? grid[rowIndex][colIndex] : undefined;
       }
 
       function setColor(x, y, color) {
         const rowIndex = Math.floor(y / gridSize);
         const colIndex = Math.floor(x / gridSize);
+
+        if (!grid[rowIndex]) {
+          grid[rowIndex] = [];
+        }
+
         grid[rowIndex][colIndex] = color;
         drawOverlay();
       }
@@ -101,17 +115,7 @@
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
-        const currentColor = getColor(x, y);
-
-        // Change color on each click: red -> green -> blue -> yellow -> red
-        const newColor = {
-          "red": "green",
-          "green": "blue",
-          "blue": "yellow",
-          "yellow": "red"
-        }[currentColor];
-
-        setColor(x, y, newColor);
+        setColor(x, y, selectedColor);
       }
 
       canvas.addEventListener("click", handleClick);
