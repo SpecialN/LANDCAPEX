@@ -1,128 +1,111 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="1671.6">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; line-height: 14.0px; font: 12.0px Courier; color: #000000; -webkit-text-stroke: #000000}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; line-height: 14.0px; font: 12.0px Courier; color: #000000; -webkit-text-stroke: #000000; min-height: 12.0px}
-    span.s1 {font-kerning: none}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    canvas {
+      border: 1px solid #000;
+      cursor: pointer;
+    }
   </style>
+  <title>Grid Overlay</title>
 </head>
 <body>
-<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
-<p class="p1"><span class="s1">&lt;html lang="en"&gt;</span></p>
-<p class="p1"><span class="s1">&lt;head&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;style&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>canvas {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>border: 1px solid #000;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>cursor: pointer;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;title&gt;Grid Overlay&lt;/title&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
-<p class="p1"><span class="s1">&lt;body&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;input type="file" id="imageInput" accept="image/jpeg" /&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;canvas id="gridCanvas" width="600" height="600"&gt;&lt;/canvas&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>document.addEventListener("DOMContentLoaded", function() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const canvas = document.getElementById("gridCanvas");</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const context = canvas.getContext("2d");</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const imageInput = document.getElementById("imageInput");</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>let image = new Image();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>let isImageLoaded = false;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>// Listen for image upload</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>imageInput.addEventListener("change", function(event) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const file = event.target.files[0];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (file) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>const reader = new FileReader();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>reader.onload = function(e) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>image.src = e.target.result;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>};</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>reader.readAsDataURL(file);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>image.onload = function() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>isImageLoaded = true;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>drawOverlay();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const gridSize = 100;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const rows = canvas.height / gridSize;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const cols = canvas.width / gridSize;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const grid = [];</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>// Initialize the grid with default color (red)</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>for (let i = 0; i &lt; rows; i++) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>grid[i] = [];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>for (let j = 0; j &lt; cols; j++) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>grid[i][j] = "red";</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>function drawOverlay() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (!isImageLoaded) return;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>// Draw the map</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>context.drawImage(image, 0, 0, canvas.width, canvas.height);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>// Draw the semi-transparent grid on top</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>context.globalAlpha = 0.5; // Set transparency</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>for (let i = 0; i &lt; rows; i++) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>for (let j = 0; j &lt; cols; j++) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const color = grid[i][j];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>context.fillStyle = color;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>context.fillRect(j * gridSize, i * gridSize, gridSize, gridSize);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>context.strokeRect(j * gridSize, i * gridSize, gridSize, gridSize);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>context.globalAlpha = 1; // Reset transparency</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>function getColor(x, y) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const rowIndex = Math.floor(y / gridSize);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const colIndex = Math.floor(x / gridSize);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>return grid[rowIndex][colIndex];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>function setColor(x, y, color) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const rowIndex = Math.floor(y / gridSize);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const colIndex = Math.floor(x / gridSize);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>grid[rowIndex][colIndex] = color;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>drawOverlay();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>function handleClick(event) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const rect = canvas.getBoundingClientRect();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const x = event.clientX - rect.left;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const y = event.clientY - rect.top;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const currentColor = getColor(x, y);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>// Change color on each click: red -&gt; green -&gt; blue -&gt; yellow -&gt; red</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const newColor = {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>"red": "green",</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>"green": "blue",</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>"blue": "yellow",</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>"yellow": "red"</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}[currentColor];</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>setColor(x, y, newColor);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>canvas.addEventListener("click", handleClick);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
+  <input type="file" id="imageInput" accept="image/jpeg" />
+  <canvas id="gridCanvas" width="600" height="600"></canvas>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const canvas = document.getElementById("gridCanvas");
+      const context = canvas.getContext("2d");
+      const imageInput = document.getElementById("imageInput");
+
+      let image = new Image();
+      let isImageLoaded = false;
+
+      // Listen for image upload
+      imageInput.addEventListener("change", function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            image.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      image.onload = function() {
+        isImageLoaded = true;
+        drawOverlay();
+      };
+
+      const gridSize = 100;
+      const rows = canvas.height / gridSize;
+      const cols = canvas.width / gridSize;
+
+      const grid = [];
+
+      // Initialize the grid with default color (red)
+      for (let i = 0; i < rows; i++) {
+        grid[i] = [];
+        for (let j = 0; j < cols; j++) {
+          grid[i][j] = "red";
+        }
+      }
+
+      function drawOverlay() {
+        if (!isImageLoaded) return;
+
+        // Draw the map
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        // Draw the semi-transparent grid on top
+        context.globalAlpha = 0.5; // Set transparency
+        for (let i = 0; i < rows; i++) {
+          for (let j = 0; j < cols; j++) {
+            const color = grid[i][j];
+            context.fillStyle = color;
+            context.fillRect(j * gridSize, i * gridSize, gridSize, gridSize);
+            context.strokeRect(j * gridSize, i * gridSize, gridSize, gridSize);
+          }
+        }
+        context.globalAlpha = 1; // Reset transparency
+      }
+
+      function getColor(x, y) {
+        const rowIndex = Math.floor(y / gridSize);
+        const colIndex = Math.floor(x / gridSize);
+        return grid[rowIndex][colIndex];
+      }
+
+      function setColor(x, y, color) {
+        const rowIndex = Math.floor(y / gridSize);
+        const colIndex = Math.floor(x / gridSize);
+        grid[rowIndex][colIndex] = color;
+        drawOverlay();
+      }
+
+      function handleClick(event) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const currentColor = getColor(x, y);
+
+        // Change color on each click: red -> green -> blue -> yellow -> red
+        const newColor = {
+          "red": "green",
+          "green": "blue",
+          "blue": "yellow",
+          "yellow": "red"
+        }[currentColor];
+
+        setColor(x, y, newColor);
+      }
+
+      canvas.addEventListener("click", handleClick);
+    });
+  </script>
 </body>
 </html>
