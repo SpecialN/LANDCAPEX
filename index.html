@@ -9,17 +9,17 @@
       cursor: pointer;
     }
   </style>
-  <title>Grid Overlay</title>
+  <title>Land Capture Game</title>
 </head>
 <body>
   <label for="scaleSlider">Adjust Grid Scale:</label>
   <input type="range" id="scaleSlider" min="50" max="200" step="50" value="100" />
   <br>
-  <label for="colorSelector">Select Grid Color:</label>
+  <label for="colorSelector">Select Team Color:</label>
   <select id="colorSelector">
     <option value="red">Red</option>
-    <option value="green">Green</option>
     <option value="blue">Blue</option>
+    <option value="green">Green</option>
     <option value="yellow">Yellow</option>
     <option value="transparent">Transparent</option>
   </select>
@@ -78,6 +78,7 @@
 
         // Draw the semi-transparent grid on top
         context.globalAlpha = 0.5; // Set transparency
+
         const rows = Math.ceil(canvas.height / gridSize);
         const cols = Math.ceil(canvas.width / gridSize);
 
