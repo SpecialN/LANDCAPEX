@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    body {
+      margin: 0;
+      overflow: hidden; /* Prevent scrolling while dragging */
+    }
+
     canvas {
       border: 1px solid #000;
       cursor: pointer;
@@ -11,11 +16,13 @@
       height: auto; /* Maintain the aspect ratio of the canvas */
       transition: transform 0.3s ease-in-out; /* Add a smooth transition for the animation */
     }
+
     .border-label {
       position: absolute;
       font-size: 14px;
       pointer-events: none;
     }
+
     #versionInfo {
       position: absolute;
       top: 10px;
@@ -27,7 +34,7 @@
   <title>Land Capture Game</title>
 </head>
 <body>
-  <div id="versionInfo" class="border-label">Version: 1.2</div>
+  <div id="versionInfo" class="border-label">Version: 1.3</div>
   <label for="scaleSlider">Adjust Grid Scale:</label>
   <input type="range" id="scaleSlider" min="25" max="200" step="25" value="100" />
   <br>
@@ -65,6 +72,9 @@
       let isMapLocked = false;
       let offsetX = 0;
       let offsetY = 0;
+      let isDragging = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
 
       const grid = [];
       const gridHistory = [];
@@ -201,10 +211,35 @@
         hoverInfo.style.top = `${y}px`;
       }
 
+      function handleMouseDown(event) {
+        isDragging = true;
+        dragStartX = event.clientX;
+        dragStartY = event.clientY;
+      }
+
+      function handleMouseMove(event) {
+        if (isDragging) {
+          const deltaX = event.clientX - dragStartX;
+          const deltaY = event.clientY - dragStartY;
+          offsetX += deltaX;
+          offsetY += deltaY;
+          drawOverlay();
+          dragStartX = event.clientX;
+          dragStartY = event.clientY;
+        }
+      }
+
+      function handleMouseUp() {
+        isDragging = false;
+      }
+
       canvas.addEventListener("click", handleClick);
       undoButton.addEventListener("click", handleUndo);
       lockUnlockButton.addEventListener("click", toggleMapLock);
       canvas.addEventListener("mousemove", handleHover);
+      canvas.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
     });
   </script>
 </body>
