@@ -39,6 +39,9 @@
       let gridSize = parseInt(scaleSlider.value);
       let selectedColor = colorSelector.value;
 
+      // Initialize the grid with an empty array
+      const grid = [];
+
       // Listen for image upload
       imageInput.addEventListener("change", function(event) {
         const file = event.target.files[0];
