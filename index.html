@@ -6,21 +6,15 @@
   <style>
     body {
       margin: 0;
-      overflow: hidden; /* Prevent scrolling while dragging */
+      overflow: hidden;
     }
 
     canvas {
       border: 1px solid #000;
       cursor: pointer;
-      max-width: 100%; /* Ensure the canvas doesn't exceed the width of the viewport */
-      height: auto; /* Maintain the aspect ratio of the canvas */
-      transition: transform 0.3s ease-in-out; /* Add a smooth transition for the animation */
-    }
-
-    .border-label {
-      position: absolute;
-      font-size: 14px;
-      pointer-events: none;
+      max-width: 100%;
+      height: auto;
+      transition: transform 0.3s ease-in-out;
     }
 
     #versionInfo {
@@ -30,74 +24,39 @@
       font-size: 12px;
       color: #555;
     }
+
+    #timestampContainer {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+    }
   </style>
   <title>Land Capture Game</title>
 </head>
 <body>
-  <div id="versionInfo" class="border-label">Version: 1.5</div>
-  <label for="scaleSlider">Adjust Grid Scale:</label>
-  <input type="range" id="scaleSlider" min="25" max="200" step="25" value="100" />
-  <br>
-  <label for="colorSelector">Select Team Color:</label>
-  <select id="colorSelector">
-    <option value="red">Red</option>
-    <option value="blue">Blue</option>
-    <option value="green">Green</option>
-    <option value="yellow">Yellow</option>
-    <option value="transparent">Transparent</option>
-  </select>
-  <br>
-  <input type="file" id="imageInput" accept="image/jpeg, image/png" />
+  <div id="versionInfo">Version: 0.0</div>
   <canvas id="gridCanvas"></canvas>
-  <button id="undoButton">Undo</button>
-  <button id="lockUnlockButton">Lock Map</button>
-  <div id="timestamps" class="timestamp"></div>
-  <div id="hoverInfo" class="border-label"></div>
+  <div id="timestampContainer"></div>
+
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       const canvas = document.getElementById("gridCanvas");
       const context = canvas.getContext("2d");
-      const imageInput = document.getElementById("imageInput");
-      const scaleSlider = document.getElementById("scaleSlider");
-      const colorSelector = document.getElementById("colorSelector");
-      const undoButton = document.getElementById("undoButton");
-      const lockUnlockButton = document.getElementById("lockUnlockButton");
-      const timestampsContainer = document.getElementById("timestamps");
-      const hoverInfo = document.getElementById("hoverInfo");
 
       let image = new Image();
       let isImageLoaded = false;
-      let gridSize = parseInt(scaleSlider.value);
-      let selectedColor = colorSelector.value;
-      let isMapLocked = false;
+      let gridSize = 100;
       let offsetX = 0;
-      let offsetY = 0;
       let isDragging = false;
       let dragStartX = 0;
-      let dragStartY = 0;
+      let undoHistory = [];
+      let isMapLocked = false;
+      let version = 0.0;
 
-      const grid = [];
-      const gridHistory = [];
+      const timestampsContainer = document.getElementById("timestampContainer");
 
-      imageInput.addEventListener("change", function(event) {
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            image.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-
-      scaleSlider.addEventListener("input", function() {
-        gridSize = parseInt(scaleSlider.value);
-        drawOverlay();
-      });
-
-      colorSelector.addEventListener("change", function() {
-        selectedColor = colorSelector.value;
-      });
+      image.src = "path/to/default/map.jpg"; // Default image path
 
       image.onload = function() {
         isImageLoaded = true;
@@ -110,7 +69,7 @@
         if (!isImageLoaded) return;
 
         context.clearRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(image, offsetX, offsetY, canvas.width, canvas.height);
+        context.drawImage(image, offsetX, 0, canvas.width, canvas.height);
 
         context.globalAlpha = 0.5;
 
@@ -119,115 +78,97 @@
 
         for (let i = 0; i < rows; i++) {
           for (let j = 0; j < cols; j++) {
-            const color = grid[i] && grid[i][j] ? grid[i][j].color : "transparent";
+            const color = undoHistory[i] && undoHistory[i][j] ? undoHistory[i][j].color : "transparent";
             context.fillStyle = color;
-            context.fillRect(j * gridSize + offsetX, i * gridSize + offsetY, gridSize, gridSize);
-            context.strokeRect(j * gridSize + offsetX, i * gridSize + offsetY, gridSize, gridSize);
+            context.fillRect(j * gridSize + offsetX, i * gridSize, gridSize, gridSize);
+            context.strokeRect(j * gridSize + offsetX, i * gridSize, gridSize, gridSize);
           }
         }
         context.globalAlpha = 1;
 
-        drawBorders();
+        updateTimestamps();
       }
 
-      function drawBorders() {
-        context.lineWidth = 2;
-        context.strokeStyle = "black";
-
-        const rows = Math.ceil(canvas.height / gridSize);
-        const cols = Math.ceil(canvas.width / gridSize);
-
-        for (let i = 0; i <= rows; i++) {
-          const y = i * gridSize + offsetY;
-          context.beginPath();
-          context.moveTo(0, y);
-          context.lineTo(canvas.width, y);
-          context.stroke();
-        }
-
-        for (let j = 0; j <= cols; j++) {
-          const x = j * gridSize + offsetX;
-          context.beginPath();
-          context.moveTo(x, 0);
-          context.lineTo(x, canvas.height);
-          context.stroke();
-        }
+      function updateTimestamps() {
+        timestampsContainer.innerHTML = "";
+        undoHistory.forEach((row, i) => {
+          row.forEach((col, j) => {
+            if (col && col.timestamp) {
+              const timestampDiv = document.createElement("div");
+              timestampDiv.textContent = col.timestamp;
+              timestampDiv.style.position = "absolute";
+              timestampDiv.style.top = `${i * gridSize}px`;
+              timestampDiv.style.left = `${(j * gridSize + canvas.width + 10)}px`;
+              timestampsContainer.appendChild(timestampDiv);
+            }
+          });
+        });
       }
 
       function getColor(x, y) {
-        const rowIndex = Math.floor((y - offsetY) / gridSize);
+        const rowIndex = Math.floor(y / gridSize);
         const colIndex = Math.floor((x - offsetX) / gridSize);
-        return grid[rowIndex] ? grid[rowIndex][colIndex] : undefined;
+        return undoHistory[rowIndex] && undoHistory[rowIndex][colIndex];
       }
 
       function setColor(x, y, color) {
-        const rowIndex = Math.floor((y - offsetY) / gridSize);
+        const rowIndex = Math.floor(y / gridSize);
         const colIndex = Math.floor((x - offsetX) / gridSize);
 
-        if (!grid[rowIndex]) {
-          grid[rowIndex] = [];
+        if (!undoHistory[rowIndex]) {
+          undoHistory[rowIndex] = [];
         }
 
-        // Save the current grid state to history before updating
-        gridHistory.push([...grid.map(row => [...row])]);
-
-        grid[rowIndex][colIndex] = { color };
+        const timestamp = new Date().toLocaleTimeString();
+        undoHistory[rowIndex][colIndex] = { color, timestamp };
         drawOverlay();
       }
 
       function handleClick(event) {
+        if (isMapLocked) return;
+
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
-        if (isMapLocked) {
-          setColor(x, y, selectedColor);
-        }
+        const currentColor = getColor(x, y).color;
+
+        // Change color on each click: red -> green -> blue -> yellow -> transparent -> red
+        const newColor = {
+          "red": "green",
+          "green": "blue",
+          "blue": "yellow",
+          "yellow": "transparent",
+          "transparent": "red"
+        }[currentColor];
+
+        setColor(x, y, newColor);
       }
 
       function handleUndo() {
-        if (gridHistory.length > 0) {
-          // Pop the last state from history
-          grid.splice(0, grid.length, ...gridHistory.pop());
+        if (undoHistory.length > 0) {
+          undoHistory.pop();
           drawOverlay();
         }
       }
 
       function toggleMapLock() {
         isMapLocked = !isMapLocked;
-        lockUnlockButton.textContent = isMapLocked ? "Unlock Map" : "Lock Map";
-      }
-
-      function handleHover(event) {
-        const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-
-        const rowIndex = Math.floor((y - offsetY) / gridSize);
-        const colIndex = Math.floor((x - offsetX) / gridSize);
-
-        hoverInfo.textContent = `Grid Square: (${colIndex + 1}, ${rowIndex + 1})`;
-        hoverInfo.style.left = `${x + 10}px`;
-        hoverInfo.style.top = `${y}px`;
       }
 
       function handleMouseDown(event) {
-        if (!isMapLocked) {
-          isDragging = true;
-          dragStartX = event.clientX;
-          dragStartY = event.clientY;
-        }
+        if (isMapLocked) return;
+
+        isDragging = true;
+        dragStartX = event.clientX;
       }
 
       function handleMouseMove(event) {
         if (isDragging) {
           const deltaX = event.clientX - dragStartX;
-          const deltaY = event.clientY - dragStartY;
           offsetX += deltaX;
-          offsetY += deltaY;
           drawOverlay();
           dragStartX = event.clientX;
-          dragStartY = event.clientY;
         }
       }
 
@@ -236,9 +177,11 @@
       }
 
       canvas.addEventListener("click", handleClick);
-      undoButton.addEventListener("click", handleUndo);
-      lockUnlockButton.addEventListener("click", toggleMapLock);
-      canvas.addEventListener("mousemove", handleHover);
+      document.addEventListener("keydown", function(event) {
+        if (event.key === "z" && event.ctrlKey && !isMapLocked) {
+          handleUndo();
+        }
+      });
       canvas.addEventListener("mousedown", handleMouseDown);
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
