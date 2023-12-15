@@ -16,11 +16,18 @@
       font-size: 14px;
       pointer-events: none;
     }
+    #versionInfo {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 12px;
+      color: #555;
+    }
   </style>
   <title>Land Capture Game</title>
 </head>
 <body>
-  <div id="versionInfo" class="border-label">Version: 1.1</div>
+  <div id="versionInfo" class="border-label">Version: 1.2</div>
   <label for="scaleSlider">Adjust Grid Scale:</label>
   <input type="range" id="scaleSlider" min="25" max="200" step="25" value="100" />
   <br>
@@ -116,7 +123,6 @@
       function drawBorders() {
         context.lineWidth = 2;
         context.strokeStyle = "black";
-        context.font = "12px Arial";
 
         const rows = Math.ceil(canvas.height / gridSize);
         const cols = Math.ceil(canvas.width / gridSize);
@@ -127,11 +133,6 @@
           context.moveTo(0, y);
           context.lineTo(canvas.width, y);
           context.stroke();
-
-          if (i < rows) {
-            const label = prompt(`Enter Northing for border row ${i + 1}:`, `N ${i}`);
-            context.fillText(label, 5, y + 15);
-          }
         }
 
         for (let j = 0; j <= cols; j++) {
@@ -140,11 +141,6 @@
           context.moveTo(x, 0);
           context.lineTo(x, canvas.height);
           context.stroke();
-
-          if (j < cols) {
-            const label = prompt(`Enter Easting for border column ${j + 1}:`, `E ${j}`);
-            context.fillText(label, x + 5, 15);
-          }
         }
       }
 
@@ -200,10 +196,7 @@
         const rowIndex = Math.floor((y - offsetY) / gridSize);
         const colIndex = Math.floor((x - offsetX) / gridSize);
 
-        const northing = prompt("Enter Northing:", `N ${rowIndex + 1}`);
-        const easting = prompt("Enter Easting:", `E ${colIndex + 1}`);
-
-        hoverInfo.textContent = `Northing: ${northing}, Easting: ${easting}`;
+        hoverInfo.textContent = `Grid Square: (${colIndex + 1}, ${rowIndex + 1})`;
         hoverInfo.style.left = `${x + 10}px`;
         hoverInfo.style.top = `${y}px`;
       }
