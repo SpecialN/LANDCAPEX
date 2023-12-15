@@ -12,6 +12,9 @@
   <title>Grid Overlay</title>
 </head>
 <body>
+  <label for="scaleSlider">Adjust Grid Scale:</label>
+  <input type="range" id="scaleSlider" min="50" max="200" step="50" value="100" />
+  <br>
   <input type="file" id="imageInput" accept="image/jpeg" />
   <canvas id="gridCanvas" width="600" height="600"></canvas>
   <script>
@@ -19,9 +22,11 @@
       const canvas = document.getElementById("gridCanvas");
       const context = canvas.getContext("2d");
       const imageInput = document.getElementById("imageInput");
+      const scaleSlider = document.getElementById("scaleSlider");
 
       let image = new Image();
       let isImageLoaded = false;
+      let gridSize = parseInt(scaleSlider.value);
 
       // Listen for image upload
       imageInput.addEventListener("change", function(event) {
@@ -35,12 +40,17 @@
         }
       });
 
+      // Listen for slider value changes
+      scaleSlider.addEventListener("input", function() {
+        gridSize = parseInt(scaleSlider.value);
+        drawOverlay();
+      });
+
       image.onload = function() {
         isImageLoaded = true;
         drawOverlay();
       };
 
-      const gridSize = 100;
       const rows = canvas.height / gridSize;
       const cols = canvas.width / gridSize;
 
