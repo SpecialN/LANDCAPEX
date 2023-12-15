@@ -7,6 +7,8 @@
     canvas {
       border: 1px solid #000;
       cursor: pointer;
+      max-width: 100%; /* Ensure the canvas doesn't exceed the width of the viewport */
+      height: auto; /* Maintain the aspect ratio of the canvas */
     }
   </style>
   <title>Land Capture Game</title>
@@ -25,7 +27,7 @@
   </select>
   <br>
   <input type="file" id="imageInput" accept="image/jpeg, image/png" />
-  <canvas id="gridCanvas" width="600" height="600"></canvas>
+  <canvas id="gridCanvas"></canvas>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       const canvas = document.getElementById("gridCanvas");
@@ -67,6 +69,8 @@
 
       image.onload = function() {
         isImageLoaded = true;
+        canvas.width = image.width; // Set canvas width to image width
+        canvas.height = image.height; // Set canvas height to image height
         drawOverlay();
       };
 
