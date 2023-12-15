@@ -11,20 +11,12 @@
       height: auto; /* Maintain the aspect ratio of the canvas */
       transition: transform 0.3s ease-in-out; /* Add a smooth transition for the animation */
     }
-    .timestamp {
-      position: absolute;
-      top: 0;
-      right: 0;
-      padding: 10px;
-      background-color: rgba(255, 255, 255, 0.8);
-      font-size: 14px;
-    }
   </style>
   <title>Land Capture Game</title>
 </head>
 <body>
   <label for="scaleSlider">Adjust Grid Scale:</label>
-  <input type="range" id="scaleSlider" min="50" max="200" step="50" value="100" />
+  <input type="range" id="scaleSlider" min="25" max="200" step="25" value="100" />
   <br>
   <label for="colorSelector">Select Team Color:</label>
   <select id="colorSelector">
@@ -39,7 +31,6 @@
   <canvas id="gridCanvas"></canvas>
   <button id="undoButton">Undo</button>
   <button id="lockUnlockButton">Lock Map</button>
-  <div id="timestamps" class="timestamp"></div>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       const canvas = document.getElementById("gridCanvas");
@@ -49,21 +40,15 @@
       const colorSelector = document.getElementById("colorSelector");
       const undoButton = document.getElementById("undoButton");
       const lockUnlockButton = document.getElementById("lockUnlockButton");
-      const timestampsContainer = document.getElementById("timestamps");
 
       let image = new Image();
       let isImageLoaded = false;
       let gridSize = parseInt(scaleSlider.value);
       let selectedColor = colorSelector.value;
-      let isDragging = false;
-      let dragStartX, dragStartY;
-      let offsetX = 0;
-      let offsetY = 0;
       let isMapLocked = false;
 
       const grid = [];
       const gridHistory = [];
-      const timestamps = [];
 
       imageInput.addEventListener("change", function(event) {
         const file = event.target.files[0];
@@ -96,7 +81,7 @@
         if (!isImageLoaded) return;
 
         context.clearRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(image, offsetX, offsetY, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
         context.globalAlpha = 0.5;
 
@@ -105,35 +90,24 @@
 
         for (let i = 0; i < rows; i++) {
           for (let j = 0; j < cols; j++) {
-            const colorInfo = grid[i] && grid[i][j];
-            const color = colorInfo ? colorInfo.color : "transparent";
-            const timestamp = colorInfo ? colorInfo.timestamp : "";
+            const color = grid[i] && grid[i][j] ? grid[i][j].color : "transparent";
             context.fillStyle = color;
-            context.fillRect(j * gridSize + offsetX, i * gridSize + offsetY, gridSize, gridSize);
-            context.strokeRect(j * gridSize + offsetX, i * gridSize + offsetY, gridSize, gridSize);
-
-            if (timestamp) {
-              context.font = "12px Arial";
-              context.fillStyle = "black";
-              context.fillText(timestamp, (j * gridSize) + 5 + offsetX, (i * gridSize) + 15 + offsetY);
-            }
+            context.fillRect(j * gridSize, i * gridSize, gridSize, gridSize);
+            context.strokeRect(j * gridSize, i * gridSize, gridSize, gridSize);
           }
         }
         context.globalAlpha = 1;
-
-        // Update timestamps in the container
-        timestampsContainer.innerHTML = timestamps.map(entry => `<div>${entry}</div>`).join('');
       }
 
       function getColor(x, y) {
-        const rowIndex = Math.floor((y - offsetY) / gridSize);
-        const colIndex = Math.floor((x - offsetX) / gridSize);
+        const rowIndex = Math.floor(y / gridSize);
+        const colIndex = Math.floor(x / gridSize);
         return grid[rowIndex] ? grid[rowIndex][colIndex] : undefined;
       }
 
       function setColor(x, y, color) {
-        const rowIndex = Math.floor((y - offsetY) / gridSize);
-        const colIndex = Math.floor((x - offsetX) / gridSize);
+        const rowIndex = Math.floor(y / gridSize);
+        const colIndex = Math.floor(x / gridSize);
 
         if (!grid[rowIndex]) {
           grid[rowIndex] = [];
@@ -142,68 +116,26 @@
         // Save the current grid state to history before updating
         gridHistory.push([...grid.map(row => [...row])]);
 
-        const timestamp = new Date().toLocaleString();
-        timestamps.push(`${color.toUpperCase()} claimed at ${timestamp}`);
-
-        grid[rowIndex][colIndex] = { color, timestamp };
+        grid[rowIndex][colIndex] = { color };
         drawOverlay();
       }
 
       function handleClick(event) {
-        if (isMapLocked) return;
-
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
-        setColor(x, y, selectedColor);
-      }
-
-      function handleMouseDown(event) {
-        if (isMapLocked) return;
-
-        isDragging = true;
-        const rect = canvas.getBoundingClientRect();
-        dragStartX = event.clientX - rect.left;
-        dragStartY = event.clientY - rect.top;
-      }
-
-      function handleMouseMove(event) {
-        if (!isDragging || isMapLocked) return;
-
-        const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-
-        offsetX += x - dragStartX;
-        offsetY += y - dragStartY;
-
-        dragStartX = x;
-        dragStartY = y;
-
-        drawOverlay();
-      }
-
-      function handleMouseUp() {
-        isDragging = false;
+        if (isMapLocked) {
+          setColor(x, y, selectedColor);
+        }
       }
 
       function handleUndo() {
         if (gridHistory.length > 0) {
           // Pop the last state from history
           grid.splice(0, grid.length, ...gridHistory.pop());
-          timestamps.pop(); // Remove the corresponding timestamp
           drawOverlay();
-          animateUndo();
         }
-      }
-
-      function animateUndo() {
-        // Apply a simple animation to indicate the undo
-        canvas.style.transform = "scale(1.1)";
-        setTimeout(() => {
-          canvas.style.transform = "scale(1)";
-        }, 300);
       }
 
       function toggleMapLock() {
@@ -212,9 +144,6 @@
       }
 
       canvas.addEventListener("click", handleClick);
-      canvas.addEventListener("mousedown", handleMouseDown);
-      canvas.addEventListener("mousemove", handleMouseMove);
-      canvas.addEventListener("mouseup", handleMouseUp);
       undoButton.addEventListener("click", handleUndo);
       lockUnlockButton.addEventListener("click", toggleMapLock);
     });
