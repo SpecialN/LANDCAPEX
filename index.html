@@ -31,11 +31,30 @@
       right: 10px;
       transform: translateY(-50%);
     }
+
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    input[type="range"] {
+      margin-bottom: 10px;
+    }
   </style>
   <title>Land Capture Game</title>
 </head>
 <body>
-  <div id="versionInfo">Version: 0.0</div>
+  <div id="versionInfo">Version: 0.1</div>
+  <div id="controls">
+    <label for="gridSizeSlider">Grid Size:</label>
+    <input type="range" id="gridSizeSlider" min="50" max="200" step="10" value="100" />
+    <br>
+    <label for="imageInput">Upload Map:</label>
+    <input type="file" id="imageInput" accept="image/jpeg, image/png" />
+  </div>
   <canvas id="gridCanvas"></canvas>
   <div id="timestampContainer"></div>
 
@@ -43,10 +62,12 @@
     document.addEventListener("DOMContentLoaded", function() {
       const canvas = document.getElementById("gridCanvas");
       const context = canvas.getContext("2d");
+      const gridSizeSlider = document.getElementById("gridSizeSlider");
+      const imageInput = document.getElementById("imageInput");
 
       let image = new Image();
       let isImageLoaded = false;
-      let gridSize = 100;
+      let gridSize = parseInt(gridSizeSlider.value);
       let offsetX = 0;
       let isDragging = false;
       let dragStartX = 0;
@@ -56,7 +77,16 @@
 
       const timestampsContainer = document.getElementById("timestampContainer");
 
-      image.src = "path/to/default/map.jpg"; // Default image path
+      imageInput.addEventListener("change", function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            image.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
 
       image.onload = function() {
         isImageLoaded = true;
@@ -64,6 +94,11 @@
         canvas.height = image.height;
         drawOverlay();
       };
+
+      gridSizeSlider.addEventListener("input", function() {
+        gridSize = parseInt(gridSizeSlider.value);
+        drawOverlay();
+      });
 
       function drawOverlay() {
         if (!isImageLoaded) return;
