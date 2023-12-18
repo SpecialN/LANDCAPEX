@@ -4,11 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
     canvas {
       border: 1px solid #000;
       cursor: pointer;
-      max-width: 100%; /* Ensure the canvas doesn't exceed the width of the viewport */
-      height: auto; /* Maintain the aspect ratio of the canvas */
+      max-width: 100%;
+      height: auto;
+      transition: transform 0.3s ease-in-out;
     }
   </style>
   <title>Land Capture Game</title>
@@ -40,6 +46,10 @@
       let isImageLoaded = false;
       let gridSize = parseInt(scaleSlider.value);
       let selectedColor = colorSelector.value;
+      let isDragging = false;
+      let dragStartX = 0;
+      let offsetX = 0;
+      let offsetY = 0;
 
       // Initialize the grid with an empty array
       const grid = [];
@@ -69,8 +79,8 @@
 
       image.onload = function() {
         isImageLoaded = true;
-        canvas.width = image.width; // Set canvas width to image width
-        canvas.height = image.height; // Set canvas height to image height
+        canvas.width = image.width;
+        canvas.height = image.height;
         drawOverlay();
       };
 
@@ -81,7 +91,7 @@
         context.clearRect(0, 0, canvas.width, canvas.height);
 
         // Draw the map
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        context.drawImage(image, offsetX, offsetY, canvas.width, canvas.height);
 
         // Draw the semi-transparent grid on top
         context.globalAlpha = 0.5; // Set transparency
@@ -93,22 +103,22 @@
           for (let j = 0; j < cols; j++) {
             const color = grid[i] && grid[i][j] ? grid[i][j] : "transparent";
             context.fillStyle = color;
-            context.fillRect(j * gridSize, i * gridSize, gridSize, gridSize);
-            context.strokeRect(j * gridSize, i * gridSize, gridSize, gridSize);
+            context.fillRect(j * gridSize + offsetX, i * gridSize + offsetY, gridSize, gridSize);
+            context.strokeRect(j * gridSize + offsetX, i * gridSize + offsetY, gridSize, gridSize);
           }
         }
         context.globalAlpha = 1; // Reset transparency
       }
 
       function getColor(x, y) {
-        const rowIndex = Math.floor(y / gridSize);
-        const colIndex = Math.floor(x / gridSize);
+        const rowIndex = Math.floor((y - offsetY) / gridSize);
+        const colIndex = Math.floor((x - offsetX) / gridSize);
         return grid[rowIndex] ? grid[rowIndex][colIndex] : undefined;
       }
 
       function setColor(x, y, color) {
-        const rowIndex = Math.floor(y / gridSize);
-        const colIndex = Math.floor(x / gridSize);
+        const rowIndex = Math.floor((y - offsetY) / gridSize);
+        const colIndex = Math.floor((x - offsetX) / gridSize);
 
         if (!grid[rowIndex]) {
           grid[rowIndex] = [];
@@ -119,6 +129,8 @@
       }
 
       function handleClick(event) {
+        if (isDragging) return;
+
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
@@ -126,7 +138,28 @@
         setColor(x, y, selectedColor);
       }
 
+      function handleMouseDown(event) {
+        isDragging = true;
+        dragStartX = event.clientX;
+      }
+
+      function handleMouseMove(event) {
+        if (isDragging) {
+          const deltaX = event.clientX - dragStartX;
+          offsetX += deltaX;
+          drawOverlay();
+          dragStartX = event.clientX;
+        }
+      }
+
+      function handleMouseUp() {
+        isDragging = false;
+      }
+
       canvas.addEventListener("click", handleClick);
+      canvas.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
     });
   </script>
 </body>
