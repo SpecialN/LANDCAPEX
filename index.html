@@ -48,6 +48,7 @@
       let selectedColor = colorSelector.value;
       let isDragging = false;
       let dragStartX = 0;
+      let dragStartY = 0;
       let offsetX = 0;
       let offsetY = 0;
 
@@ -141,14 +142,18 @@
       function handleMouseDown(event) {
         isDragging = true;
         dragStartX = event.clientX;
+        dragStartY = event.clientY;
       }
 
       function handleMouseMove(event) {
         if (isDragging) {
           const deltaX = event.clientX - dragStartX;
+          const deltaY = event.clientY - dragStartY;
           offsetX += deltaX;
+          offsetY += deltaY;
           drawOverlay();
           dragStartX = event.clientX;
+          dragStartY = event.clientY;
         }
       }
 
