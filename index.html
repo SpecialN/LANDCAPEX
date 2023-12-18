@@ -4,81 +4,47 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #mapContainer {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-    }
-
     canvas {
       border: 1px solid #000;
       cursor: pointer;
-      max-width: 100%;
-      height: auto;
-      transition: transform 0.3s ease-in-out;
-    }
-
-    #controls {
-      display: flex;
-      padding: 10px;
-      background-color: #f8f8f8;
-    }
-
-    #versionInfo {
-      margin-left: auto;
-    }
-
-    input[type="range"] {
-      margin-right: 10px;
-    }
-
-    #timestampContainer {
-      position: absolute;
-      top: 10px;
-      right: 10px;
+      max-width: 100%; /* Ensure the canvas doesn't exceed the width of the viewport */
+      height: auto; /* Maintain the aspect ratio of the canvas */
     }
   </style>
   <title>Land Capture Game</title>
 </head>
 <body>
-  <div id="mapContainer">
-    <canvas id="gridCanvas"></canvas>
-    <div id="timestampContainer"></div>
-  </div>
-  <div id="controls">
-    <label for="gridSizeSlider">Grid Size:</label>
-    <input type="range" id="gridSizeSlider" min="50" max="200" step="10" value="100" />
-    <label for="imageInput">Upload Map:</label>
-    <input type="file" id="imageInput" accept="image/jpeg, image/png" />
-    <div id="versionInfo">Version: 0.0</div>
-  </div>
-
+  <label for="scaleSlider">Adjust Grid Scale:</label>
+  <input type="range" id="scaleSlider" min="50" max="200" step="50" value="100" />
+  <br>
+  <label for="colorSelector">Select Team Color:</label>
+  <select id="colorSelector">
+    <option value="red">Red</option>
+    <option value="blue">Blue</option>
+    <option value="green">Green</option>
+    <option value="yellow">Yellow</option>
+    <option value="transparent">Transparent</option>
+  </select>
+  <br>
+  <input type="file" id="imageInput" accept="image/jpeg, image/png" />
+  <canvas id="gridCanvas"></canvas>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       const canvas = document.getElementById("gridCanvas");
       const context = canvas.getContext("2d");
-      const gridSizeSlider = document.getElementById("gridSizeSlider");
       const imageInput = document.getElementById("imageInput");
+      const scaleSlider = document.getElementById("scaleSlider");
+      const colorSelector = document.getElementById("colorSelector");
 
       let image = new Image();
       let isImageLoaded = false;
-      let gridSize = parseInt(gridSizeSlider.value);
-      let offsetX = 0;
-      let isDragging = false;
-      let dragStartX = 0;
-      let undoHistory = [];
-      let isMapLocked = false;
-      let version = 0.0;
+      let gridSize = parseInt(scaleSlider.value);
+      let selectedColor = colorSelector.value;
 
-      const timestampsContainer = document.getElementById("timestampContainer");
+      // Initialize the grid with an empty array
+      const grid = [];
 
+      // Listen for image upload
       imageInput.addEventListener("change", function(event) {
         const file = event.target.files[0];
         if (file) {
@@ -90,138 +56,77 @@
         }
       });
 
-      image.onload = function() {
-        isImageLoaded = true;
-        canvas.width = image.width;
-        canvas.height = image.height;
-        drawOverlay();
-      };
-
-      gridSizeSlider.addEventListener("input", function() {
-        gridSize = parseInt(gridSizeSlider.value);
+      // Listen for slider value changes
+      scaleSlider.addEventListener("input", function() {
+        gridSize = parseInt(scaleSlider.value);
         drawOverlay();
       });
+
+      // Listen for color selection changes
+      colorSelector.addEventListener("change", function() {
+        selectedColor = colorSelector.value;
+      });
+
+      image.onload = function() {
+        isImageLoaded = true;
+        canvas.width = image.width; // Set canvas width to image width
+        canvas.height = image.height; // Set canvas height to image height
+        drawOverlay();
+      };
 
       function drawOverlay() {
         if (!isImageLoaded) return;
 
+        // Clear the canvas
         context.clearRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(image, offsetX, 0, canvas.width, canvas.height);
 
-        context.globalAlpha = 0.5;
+        // Draw the map
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        // Draw the semi-transparent grid on top
+        context.globalAlpha = 0.5; // Set transparency
 
         const rows = Math.ceil(canvas.height / gridSize);
         const cols = Math.ceil(canvas.width / gridSize);
 
         for (let i = 0; i < rows; i++) {
           for (let j = 0; j < cols; j++) {
-            const color = undoHistory[i] && undoHistory[i][j] ? undoHistory[i][j].color : "transparent";
+            const color = grid[i] && grid[i][j] ? grid[i][j] : "transparent";
             context.fillStyle = color;
-            context.fillRect(j * gridSize + offsetX, i * gridSize, gridSize, gridSize);
-            context.strokeRect(j * gridSize + offsetX, i * gridSize, gridSize, gridSize);
+            context.fillRect(j * gridSize, i * gridSize, gridSize, gridSize);
+            context.strokeRect(j * gridSize, i * gridSize, gridSize, gridSize);
           }
         }
-        context.globalAlpha = 1;
-
-        updateTimestamps();
-      }
-
-      function updateTimestamps() {
-        timestampsContainer.innerHTML = "";
-        undoHistory.forEach((row, i) => {
-          row.forEach((col, j) => {
-            if (col && col.timestamp) {
-              const timestampDiv = document.createElement("div");
-              timestampDiv.textContent = col.timestamp;
-              timestampDiv.style.position = "absolute";
-              timestampDiv.style.top = `${i * gridSize}px`;
-              timestampDiv.style.left = `${(j * gridSize + canvas.width + 10)}px`;
-              timestampsContainer.appendChild(timestampDiv);
-            }
-          });
-        });
+        context.globalAlpha = 1; // Reset transparency
       }
 
       function getColor(x, y) {
         const rowIndex = Math.floor(y / gridSize);
-        const colIndex = Math.floor((x - offsetX) / gridSize);
-        return undoHistory[rowIndex] && undoHistory[rowIndex][colIndex];
+        const colIndex = Math.floor(x / gridSize);
+        return grid[rowIndex] ? grid[rowIndex][colIndex] : undefined;
       }
 
       function setColor(x, y, color) {
         const rowIndex = Math.floor(y / gridSize);
-        const colIndex = Math.floor((x - offsetX) / gridSize);
+        const colIndex = Math.floor(x / gridSize);
 
-        if (!undoHistory[rowIndex]) {
-          undoHistory[rowIndex] = [];
+        if (!grid[rowIndex]) {
+          grid[rowIndex] = [];
         }
 
-        const timestamp = new Date().toLocaleTimeString();
-        undoHistory[rowIndex][colIndex] = { color, timestamp };
+        grid[rowIndex][colIndex] = color;
         drawOverlay();
       }
 
       function handleClick(event) {
-        if (isMapLocked) return;
-
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
-        const currentColor = getColor(x, y).color;
-
-        // Change color on each click: red -> green -> blue -> yellow -> transparent -> red
-        const newColor = {
-          "red": "green",
-          "green": "blue",
-          "blue": "yellow",
-          "yellow": "transparent",
-          "transparent": "red"
-        }[currentColor];
-
-        setColor(x, y, newColor);
-      }
-
-      function handleUndo() {
-        if (undoHistory.length > 0) {
-          undoHistory.pop();
-          drawOverlay();
-        }
-      }
-
-      function toggleMapLock() {
-        isMapLocked = !isMapLocked;
-      }
-
-      function handleMouseDown(event) {
-        if (isMapLocked) return;
-
-        isDragging = true;
-        dragStartX = event.clientX;
-      }
-
-      function handleMouseMove(event) {
-        if (isDragging) {
-          const deltaX = event.clientX - dragStartX;
-          offsetX += deltaX;
-          drawOverlay();
-          dragStartX = event.clientX;
-        }
-      }
-
-      function handleMouseUp() {
-        isDragging = false;
+        setColor(x, y, selectedColor);
       }
 
       canvas.addEventListener("click", handleClick);
-      document.addEventListener("keydown", function(event) {
-        if (event.key === "z" && event.ctrlKey && !isMapLocked) {
-          handleUndo();
-        }
-      });
-      canvas.addEventListener("mousedown", handleMouseDown);
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
     });
   </script>
 </body>
