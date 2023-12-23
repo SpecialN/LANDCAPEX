@@ -3,94 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapbox Grid Overlay</title>
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.css" rel="stylesheet">
+    <title>Logistics Simulation</title>
     <style>
-        body { margin: 0; padding: 0; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        .grid {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            pointer-events: none;
+        body {
+            font-family: Arial, sans-serif;
         }
-        .line {
-            stroke: #000;
-            stroke-width: 2;
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        #output {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
 <body>
+    <h1>Logistics Simulation</h1>
+    <button onclick="runSimulation()">Run Simulation</button>
+    <div id="output"></div>
 
-<div id="map"></div>
-<div class="grid"></div>
+    <script>
+        function runSimulation() {
+            // Your JavaScript code goes here
 
-<script>
-    // Replace 'YOUR_MAPBOX_ACCESS_TOKEN' with your Mapbox access token
-    mapboxgl.accessToken = 'pk.eyJ1IjoibnlsMG4iLCJhIjoiY2xxYXBma2J2MGdvbjJscGZpMmtpMDNxNiJ9.9ED6eN7hOmoa06luVYjetw';
+            // Example Usage
+            const simulation = new Simulation();
+            writeToOutput("\nInitial Status:");
+            writeToOutput(simulation.displayStatus());
 
-    // Create a Mapbox map
-    var map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v11',
-        center: [-74.5, 40],
-        zoom: 9
-    });
+            // Team commands
+            simulation.moveVehicle(simulation.bushmasters[0], "WAVERLEY");
+            simulation.loadCargo("Team1", simulation.bushmasters[0], "PEOPLE", 7);
+            writeToOutput(simulation.displayStatus());
 
-    // Add a grid overlay
-    map.on('load', function () {
-        var gridSize = 0.1; // Adjust this value based on your requirements
+            simulation.moveVehicle(simulation.chinooks[0], "CATHERINE");
+            simulation.loadCargo("Team2", simulation.chinooks[0], "REACTORS", 1);
+            writeToOutput(simulation.displayStatus());
 
-        for (var i = -180; i < 180; i += gridSize) {
-            var line = {
-                type: 'Feature',
-                geometry: {
-                    type: 'LineString',
-                    coordinates: [[i, -90], [i, 90]]
-                }
-            };
+            simulation.moveVehicle(simulation.ferry, "CAPE JERVIS");
+            simulation.loadCargo("Team3", simulation.ferry, "PEOPLE", 50);
+            writeToOutput(simulation.displayStatus());
 
-            map.addLayer({
-                id: 'gridline-' + i,
-                type: 'line',
-                source: {
-                    type: 'geojson',
-                    data: line
-                },
-                paint: {
-                    'line-color': '#000',
-                    'line-width': 1
-                }
-            });
+            simulation.unloadCargo("Team1", simulation.bushmasters[0], "PEOPLE", 5);
+            simulation.unloadCargo("Team2", simulation.chinooks[0], "REACTORS", 1);
+            writeToOutput(simulation.displayStatus());
         }
 
-        for (var i = -90; i < 90; i += gridSize) {
-            var line = {
-                type: 'Feature',
-                geometry: {
-                    type: 'LineString',
-                    coordinates: [[-180, i], [180, i]]
-                }
-            };
-
-            map.addLayer({
-                id: 'gridline-' + i,
-                type: 'line',
-                source: {
-                    type: 'geojson',
-                    data: line
-                },
-                paint: {
-                    'line-color': '#000',
-                    'line-width': 1
-                }
-            });
+        class Location {
+            constructor(name, population, documents, reactors) {
+                this.name = name;
+                this.population = population;
+                this.documents = documents;
+                this.reactors = reactors;
+            }
         }
-    });
-</script>
 
+        class Vehicle {
+            constructor(name, capacityPeople, capacityDocuments, capacityReactors, travelTimes) {
+                this.name = name;
+                this.capacityPeople = capacityPeople;
+                this.capacityDocuments = capacityDocuments;
+                this.capacityReactors = capacityReactors;
+                this.travelTimes = travelTimes;
+                this.location = null;
+                this.cargoPeople = 0;
+                this.cargoDocuments = 0;
+                this.cargoReactors = 0;
+            }
+
+            loadPeople(quantity) {
+                if (this.capacityPeople >= quantity) {
+                    this.cargoPeople = quantity;
+                    return true;
+                }
+                return false;
+            }
+
+            loadDocuments(quantity) {
+                if (this.capacityDocuments >= quantity) {
+                    this.cargoDocuments = quantity;
+                    return true;
+                }
+                return false;
+            }
+
+            loadReactors(quantity) {
+                if (this.capacityReactors >= quantity) {
+                    this.cargoReactors = quantity;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        class Simulation {
+            constructor() {
+                this.locations = {
+                    "KINGSCOTE": new Location("KINGSCOTE", 20, 0, 0),
+                    "PARNDANA": new Location("PARNDANA", 30, 0, 0),
+                    "PENNESHAW": new Location("PENNESHAW", 60, 0, 0),
+                    "CAPE BORDA": new Location("CAPE BORDA", 140, 0, 0),
+                    "WAVERLEY": new Location("WAVERLEY", 0, 10, 0),
+                    "CATHERINE": new Location("CATHERINE", 0, 30, 1)
+                };
+
+                this.bushmasters = Array.from({ length: 6 }, (_, index) =>
+                    new Vehicle(`BUSHMASTER ${index + 1}`, 9, 2, 0, {
+                        "CAPE BORDA": 8, "WAVERLEY": 9, "PARNDANA": 7, "CATHERINE": 9, "KINGSCOTE": 6
+                    })
+                );
+
+                this.chinooks = Array.from({ length: 2 }, (_, index) =>
+                    new Vehicle(`CHINOOK ${index + 1}`, 17, 0, 0, {
+                        "CAPE BORDA": 10, "WAVERLEY": 10, "PARNDANA": 12, "CATHERINE": 7, "KINGSCOTE": 6, "CAPE JERVIS": 15
+                    })
+                );
+
+                this.ferry = new Vehicle("FERRY", 75, 0, 0, {"PENNESHAW": 30, "CAPE JERVIS": 30});
+            }
+
+            displayStatus() {
+                let output = "\nCurrent Status:\n";
+
+                this.bushmasters.forEach(bushmaster => {
+                    output += `${bushmaster.name}: Location=${bushmaster.location}, People=${bushmaster.cargoPeople}, Documents=${bushmaster.cargoDocuments}\n`;
+                });
+
+                this.chinooks.forEach(chinook => {
+                    output += `${chinook.name}: Location=${chinook.location}, People=${chinook.cargoPeople}, Reactors=${chinook.cargoReactors}\n`;
+                });
+
+                output += `Ferry: Location=${this.ferry.location}, People=${this.ferry.cargoPeople}\n`;
+
+                for (const location of Object.values(this.locations)) {
+                    output += `${location.name}: Population=${location.population}, Documents=${location.documents}, Reactors=${location.reactors}\n`;
+                }
+
+                return output;
+            }
+
+            moveVehicle(vehicle, destination) {
+                if (destination in vehicle.travelTimes) {
+                    const travelTime = vehicle.travelTimes[destination];
+                    vehicle.location = destination;
+                    writeToOutput(`${vehicle.name} is traveling to ${destination}. Travel time: ${travelTime} minutes.`);
+                    return true;
+                } else {
+                    writeToOutput(`${vehicle.name} cannot travel to ${destination}.`);
+                    return false;
+                }
+            }
+
+            loadCargo(team, vehicle, cargoType, quantity) {
+                let loaded = false;
+                if (cargoType === "PEOPLE") {
+                    loaded = vehicle.loadPeople(quantity);
+                } else if (cargoType === "DOCUMENTS") {
+                    loaded = vehicle.loadDocuments(quantity);
+                } else if (cargoType === "REACTORS") {
+                    loaded = vehicle.loadReactors(quantity);
+                }
+
+                if (loaded) {
+                    writeToOutput(`${team} loaded ${quantity} ${cargoType} into ${vehicle.name}.`);
+                } else {
+                    writeToOutput(`${team} cannot load ${quantity} ${cargoType} into ${vehicle.name} due to capacity constraints.`);
+                }
+            }
+
+            unloadCargo(team, vehicle, cargoType, quantity) {
+                if (cargoType === "PEOPLE" && vehicle.cargoPeople >= quantity) {
+                    vehicle.cargoPeople -= quantity;
+                    writeToOutput(`${team} unloaded ${quantity} people from ${vehicle.name} at ${vehicle.location}.`);
+                } else if (cargoType === "DOCUMENTS" && vehicle.cargoDocuments >= quantity) {
+                    vehicle.cargoDocuments -= quantity;
+                    writeToOutput(`${team} unloaded ${quantity} documents from ${vehicle.name} at ${vehicle.location}.`);
+                } else if (cargoType === "REACTORS" && vehicle.cargoReactors >= quantity) {
+                    vehicle.cargoReactors -= quantity;
+                    writeToOutput(`${team} unloaded ${quantity} reactors from ${vehicle.name} at ${vehicle.location}.`);
+                } else {
+                    writeToOutput(`${team} cannot unload ${quantity} ${cargoType} from ${vehicle.name} due to insufficient cargo.`);
+                }
+            }
+        }
+
+        function writeToOutput(message) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML += `<pre>${message}</pre>`;
+        }
+    </script>
 </body>
 </html>
